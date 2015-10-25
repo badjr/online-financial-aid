@@ -161,10 +161,7 @@ $(document).ready(function() {
             <div class="col-lg-12 text-center">
                 <h1>Your place in line is 1</h1>
                 <p class="lead">Thanks for choosing PantherChat!</p>
-                <ul class="list-unstyled">
-                    <li>Bootstrap v3.3.1</li>
-                    <li>jQuery v1.11.1</li>
-                </ul>
+                
             </div>
         </div>
         <!-- /.row -->
