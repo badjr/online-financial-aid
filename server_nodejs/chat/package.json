@@ -1,0 +1,8 @@
+{
+  "name": "socket-chat",
+  "version": "0.0.1",
+  "description": "panther chat app",
+  "dependencies": {
+    "express": "^4.10.2"
+  }
+}
