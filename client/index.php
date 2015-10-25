@@ -58,8 +58,23 @@
 -->
 </style>
 <?php 
-$colours = array('007AFF','FF7000','FF7000','15E25F','CFC700','CFC700','CF1100','CF00BE','F00');
-$user_colour = array_rand($colours);
+    $colours = array('007AFF','FF7000','FF7000','15E25F','CFC700','CFC700','CF1100','CF00BE','F00');
+    $user_colour = array_rand($colours);
+
+    // echo $_POST["campusid"];
+
+    $servername = "localhost";
+    $username = "root";
+    $password = "123";
+
+    //connection to the database
+    $dbhandle = mysql_connect($servername, $username, $password)
+        or die("Unable to connect to MySQL");
+
+    $query = mysql_query("select * from counselors");
+
+    echo $query;
+
 ?>
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
@@ -126,7 +141,6 @@ $(document).ready(function() {
 </script>
 
 <body>
-
     <!-- Navigation -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
         <div class="container">
@@ -159,6 +173,7 @@ $(document).ready(function() {
 
         <div class="row">
             <div class="col-lg-12 text-center">
+
                 <h1>Your place in line is 1</h1>
                 <p class="lead">Thanks for choosing PantherChat!</p>
                 <ul class="list-unstyled">
@@ -176,7 +191,7 @@ $(document).ready(function() {
     <div class="chat_wrapper">
 <div class="message_box" id="message_box"></div>
 <div class="panel">
-<input type="text" name="name" id="name" placeholder="Your Name" maxlength="10" style="width:20%"  />
+<!-- <input type="text" name="name" id="name" placeholder="Your Name" maxlength="10" style="width:20%"  /> -->
 <input type="text" name="message" id="message" placeholder="Message" maxlength="80" style="width:60%" />
 <button id="send-btn">Send</button>
 </div>
