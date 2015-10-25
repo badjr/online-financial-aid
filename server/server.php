@@ -1,16 +1,16 @@
 0<?php
-$host = '10.250.40.227'; //host
-// $host = 'localhost'; //host
+// $host = '10.250.40.227'; //host
+$host = 'localhost'; //host
 $port = '9000'; //port
 $null = NULL; //null var
 
-$servername = "localhost";
-$username = "root";
-$password = "123";
+// $servername = "localhost";
+// $username = "root";
+// $password = "123";
 
 //connection to the database
-$dbhandle = mysql_connect($servername, $username, $password)
-  or die("Unable to connect to MySQL");
+// $dbhandle = mysql_connect($servername, $username, $password)
+//   or die("Unable to connect to MySQL");
 
 // echo "Connected to MySQL<br>";
 
@@ -37,6 +37,9 @@ socket_listen($socket);
 //create & add listning socket to the list
 $clients = array($socket);
 
+//the queue
+$queue = new SplQueue();
+
 //start endless loop, so that our script doesn't stop
 while (true) {
 	//manage multipal connections
@@ -47,13 +50,19 @@ while (true) {
 	//check for new socket
 	if (in_array($socket, $changed)) {
 		$socket_new = socket_accept($socket); //accpet new socket
+		// echo $socket_new;
 		$clients[] = $socket_new; //add socket to client array
 		
 		$header = socket_read($socket_new, 1024); //read data sent by the socket
 		perform_handshaking($header, $socket_new, $host, $port); //perform websocket handshake
+		// echo $header;
 		
 		socket_getpeername($socket_new, $ip); //get ip address of connected socket
 		$response = mask(json_encode(array('type'=>'system', 'message'=>$ip.' connected'))); //prepare json data
+		// echo "length = " . count($clients) . "\n";
+		// foreach($clients as $key=>$value) {
+ 	// 	   echo 'index is '.$key.' and value is '.$value . "\n";
+		// }
 		send_message($response); //notify all users about new connection
 		
 		//make room for new socket
@@ -68,14 +77,58 @@ while (true) {
 		while(socket_recv($changed_socket, $buf, 1024, 0) >= 1)
 		{
 			$received_text = unmask($buf); //unmask data
-			$tst_msg = json_decode($received_text); //json decode 
+			$tst_msg = json_decode($received_text); //json decode
+
+			if (isset($tst_msg->next) || isset($tst_msg->finish)) { //when next button is pressed (or finish for students)
+				$socket_to_remove = $queue->dequeue();
+				// $clients[array_search ( mixed $needle , array $haystack)];
+				// echo "socket_to_remove = " . $socket_to_remove . "\n";
+				// echo "count(clients) = " . count($clients) . "\n";
+				unset($clients[array_search ($socket_to_remove, $clients)]);
+				// echo "count(clients) after = " . count($clients) . "\n";
+				socket_close($socket_to_remove);
+				$response = mask(json_encode(array('type'=>'system', 'message'=>$ip.' disconnected')));
+				send_message($response);
+
+				$response_text = mask(json_encode(array('type'=>'queuedecrease', 'name'=>$user_name, 'message'=>$user_message, 'color'=>$user_color, 'usertype'=>$user_type, 'queuelength'=>count($queue))));
+				send_message($response_text); //send data
+				$response_text = mask(json_encode(array('type'=>'queuecountforcounselor', 'name'=>$user_name, 'message'=>$user_message, 'color'=>$user_color, 'usertype'=>$user_type, 'queuelength'=>count($queue)-1)));
+				send_message($response_text);
+				continue;
+			}
+
+			// echo "count(tst_msg) = " . count($tst_msg);
 			$user_name = $tst_msg->name; //sender name
 			$user_message = $tst_msg->message; //message text
 			$user_color = $tst_msg->color; //color
+
+			$user_type = NULL;
+			if (isset($tst_msg->usertype)) {
+				$user_type = $tst_msg->usertype;
+				if ($user_type == "student") { //when putting a student in the queue
+					$queue->enqueue($changed_socket);
+					echo "just put " . $user_name . " in the queue. " . $changed_socket . "\n";
+					$response_text = mask(json_encode(array('type'=>'initialplace', 'name'=>$user_name, 'message'=>$user_message, 'color'=>$user_color, 'usertype'=>$user_type, 'queuelength'=>count($queue))));
+					send_message($response_text); //send data
+					$response_text = mask(json_encode(array('type'=>'queuecountforcounselor', 'name'=>$user_name, 'message'=>$user_message, 'color'=>$user_color, 'usertype'=>$user_type, 'queuelength'=>count($queue))));
+					send_message($response_text);
+				}
+				else {
+					$response_text = mask(json_encode(array('type'=>'queuecountforcounselor', 'name'=>$user_name, 'message'=>$user_message, 'color'=>$user_color, 'usertype'=>$user_type, 'queuelength'=>count($queue))));
+					send_message($response_text);
+				}
+			}
+			// if (property_exists($user_type, $tst_msg->$usertype)) {
+			// 	$user_type = $tst_msg->usertype;
+			// }
+
+			// echo $user_type;
 			
 			//prepare data to be sent to client
-			$response_text = mask(json_encode(array('type'=>'usermsg', 'name'=>$user_name, 'message'=>$user_message, 'color'=>$user_color)));
-			send_message($response_text); //send data
+			if (is_null($user_type)) {
+				$response_text = mask(json_encode(array('type'=>'usermsg', 'name'=>$user_name, 'message'=>$user_message, 'color'=>$user_color)));
+				send_message($response_text); //send data
+			}
 			break 2; //exist this loop
 		}
 		

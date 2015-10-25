@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Bare - Start Bootstrap Template</title>
+    <title>PantherChat</title>
 
     <!-- Bootstrap Core CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -92,6 +92,16 @@
 
     // }
 
+    function generateChatBox() {
+        echo "<div class=\"chat_wrapper\">
+        <div class=\"message_box\" id=\"message_box\"></div>
+        <div class=\"panel\" id=\"chatpanel\">
+        <input type=\"text\" name=\"message\" id=\"message\" placeholder=\"Message\" maxlength=\"80\" style=\"width:60%\" />
+        <button id=\"send-btn\">Send</button>
+        </div>
+        </div>";
+    }
+
 ?>
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
@@ -101,37 +111,75 @@
 
 $(document).ready(function() {
     //create a new WebSocket object.
-    var wsUri = "ws://localhost:9000/demo/server.php";
-    // var wsUri = "ws://10.250.40.227:9000/demo/server.php";
-    websocket = new WebSocket(wsUri); 
+    // var wsUri = "ws://localhost:9000/demo/server.php";
+    var wsUri = "ws://10.250.40.227:9000/demo/server.php";
+    websocket = new WebSocket(wsUri);
+    var placeInLine = null;
     
     websocket.onopen = function(ev) { // connection is open 
-        $('#message_box').append("<div class=\"system_msg\">Connected!</div>"); //notify user
-    }
-
-    $('#send-btn').click(function() { //use clicks message send button   
-        var mymessage = $('#message').val(); //get message text
-        // var myname = $('#name').val(); //get user name
-        // var myname = '<?php echo $name; ?>';
-        var myname = document.getElementById('namediv').innerHTML;
-        
-        if(myname == "") { //empty name?
-            console.log("Enter your Name please! name = " + myname);
-            return;
-        }
-        if(mymessage == ""){ //emtpy message?
-            alert("Enter Some message Please!");
-            return;
-        }
-        
+        //$('#message_box').append("<div class=\"system_msg\">Connected!</div>"); //notify user
         //prepare json data
         var msg = {
-        message: mymessage,
-        name: myname,
+        message: "type",
+        name: document.getElementById('namediv').innerHTML,
+        usertype: document.getElementById('usertype').innerHTML,
         color : '<?php echo $colours[$user_colour]; ?>'
         };
         //convert and send data to server
         websocket.send(JSON.stringify(msg));
+        // console.log(document.getElementById('usertype').innerHTML);
+    }
+
+    $('#send-btn').click(function() { //use clicks message send button
+        if (placeInLine == 0 || document.getElementById('usertype').innerHTML == 'counselor') { //only those whose turn it is.
+            var mymessage = $('#message').val(); //get message text
+            // var myname = $('#name').val(); //get user name
+            // var myname = '<?php echo $name; ?>';
+            var myname = document.getElementById('namediv').innerHTML;
+            
+            // if(myname == "") { //empty name?
+            //     console.log("Enter your Name please! name = " + myname);
+            //     return;
+            // }
+            if(mymessage == ""){ //emtpy message?
+                alert("Enter Some message Please!");
+                return;
+            }
+            
+            //prepare json data
+            var msg = {
+            message: mymessage,
+            name: myname,
+            color : '<?php echo $colours[$user_colour]; ?>'
+            };
+            //convert and send data to server
+            websocket.send(JSON.stringify(msg));
+        }
+        else {
+            $('#message_box').append("<div class=\"system_msg\">You are not connected with a counselor.</div>");
+        }
+    });
+
+    $('#next-btn').click(function() { 
+        //prepare json data
+        var msg = {
+            next: "next"
+        };
+        //convert and send data to server
+        websocket.send(JSON.stringify(msg));
+    });
+
+    $('#finish-btn').click(function() {
+        if (placeInLine >= 0 && document.getElementById('usertype').innerHTML == 'student') {
+            placeInLine--;
+            $('#message_box').append("<div class=\"system_msg\">Connection Closed</div>"); //notify user
+            //prepare json data
+            var msg = {
+                finish: "finish"
+            };
+            //convert and send data to server
+            websocket.send(JSON.stringify(msg));
+        }
     });
     
     //#### Message received from server?
@@ -142,13 +190,48 @@ $(document).ready(function() {
         var uname = msg.name; //user name
         var ucolor = msg.color; //color
 
-        if(type == 'usermsg') 
-        {
-            $('#message_box').append("<div><span class=\"user_name\" style=\"color:#"+ucolor+"\">"+uname+"</span> : <span class=\"user_message\">"+umsg+"</span></div>");
+        if (placeInLine == 0 || document.getElementById('usertype').innerHTML == 'counselor') { //Prevents users in line from seeing conversation.
+            if(type == 'usermsg') {
+                $('#message_box').append("<div><span class=\"user_name\" style=\"color:#"+ucolor+"\">"+uname+"</span> : <span class=\"user_message\">"+umsg+"</span></div>");
+            }
+            if(type == 'system') {
+                $('#message_box').append("<div class=\"system_msg\">"+umsg+"</div>");
+            }
         }
-        if(type == 'system')
-        {
-            $('#message_box').append("<div class=\"system_msg\">"+umsg+"</div>");
+        if (type == 'initialplace' && document.getElementById('usertype').innerHTML == 'student') {
+            if (placeInLine == null) { //when they first log in
+                placeInLine = msg.queuelength - 1;
+                document.getElementById('placeinline').innerHTML = "Your place in line is " + (placeInLine);
+                if (placeInLine > 0) {
+                    // console.log("their message box should be disabled.");
+                    // document.getElementById("message_box").disabled = true;
+                    // $(".chat_wrapper").hide();
+                    $('#message_box').append("<div class=\"system_msg\">A financial aid counselor will be available to chat. Please wait...</div>");
+                }
+                else if (placeInLine == 0) {
+                    $('#message_box').append("<div class=\"system_msg\">Connected!</div>");
+                }
+            }
+        }
+        if (type == 'queuedecrease' && document.getElementById('usertype').innerHTML == 'student') {
+                placeInLine--;
+                document.getElementById('placeinline').innerHTML = "Your place in line is " + (placeInLine);
+                if (placeInLine == 0) {
+                    // document.getElementById('chat_wrapper').innerHTML = "";
+                    // $(".message_box").empty();
+                    // $(".chat_wrapper").show();
+                    $('#message_box').append("<div class=\"system_msg\">Connected!</div>"); //notify user
+                }
+
+        }
+        if (type == 'queuecountforcounselor' && document.getElementById('usertype').innerHTML == 'counselor') {
+            var studentsInLine = msg.queuelength;
+            if (studentsInLine == 0 || studentsInLine == 1) {
+                document.getElementById('studentsinline').innerHTML = "There are " + 0 + " students in line.";
+            }
+            else {
+                document.getElementById('studentsinline').innerHTML = "There are " + (studentsInLine - 1) + " students in line.";
+            }
         }
         
         $('#message').val(''); //reset text
@@ -162,6 +245,7 @@ $(document).ready(function() {
 
 <body>
     <div id="namediv" style="display: none"></div>
+    <div id="usertype" style="display: none"></div>
     <!-- Navigation -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
         <div class="container">
@@ -200,16 +284,36 @@ $(document).ready(function() {
                             $name = "Joe Counselor";
                             echo "<h1>Welcome, $name</h1>";
                             // echo "<script> document.getElementById('namediv').innerHTML = $name </script>;"
+                            echo "<h2 id=\"studentsinline\">There are 0 students in line.</h2>";
                             echo "<script>document.getElementById('namediv').innerHTML = \"$name\";</script>";
+                            echo "<script>document.getElementById('usertype').innerHTML = \"counselor\";</script>";
+                            generateChatBox();
+                            echo "<script>var btn = document.createElement('button'); btn.id=\"next-btn\"; btn.innerHTML=\"Next Student\"; document.getElementById('chatpanel').appendChild(btn)</script>";
+                            
                         }
                         else if ($_POST["campusid"] == "jstudent" && $_POST["password"] == "123") {
                             $name = "John Student";
                             echo "<h1>Welcome, $name</h1>";
-                            echo "<h2>Your place in line is 1</h2>";
+                            echo "<h2 id=\"placeinline\">Your place in line is 0</h2>";
                             echo "<script>document.getElementById('namediv').innerHTML = \"$name\";</script>";
+                            echo "<script>document.getElementById('usertype').innerHTML = \"student\";</script>";
+                            generateChatBox();
+                            echo "<script>var btn = document.createElement('button'); btn.id=\"finish-btn\"; btn.innerHTML=\"Finish\"; document.getElementById('chatpanel').appendChild(btn)</script>";
+                        }
+                        else if (empty($_POST["campusid"]) || empty($_POST["password"])) {
+                            echo "You must enter both your campusid and password.";
+                            die();
                         }
                         else {
-                            echo "Username or password not found.";
+                            $name = $_POST["campusid"];
+                            echo "<h1>Welcome, $name</h1>";
+                            echo "<h2 id=\"placeinline\">Your place in line is 0</h2>";
+                            echo "<script>document.getElementById('namediv').innerHTML = \"$name\";</script>";
+                            echo "<script>document.getElementById('usertype').innerHTML = \"student\";</script>";
+                            generateChatBox();
+                            echo "<script>var btn = document.createElement('button'); btn.id=\"finish-btn\"; btn.innerHTML=\"Finish\"; document.getElementById('chatpanel').appendChild(btn)</script>";
+                            // echo "Username or password not found.";
+                            // die();
                         }
                     ?>
                 
@@ -223,15 +327,14 @@ $(document).ready(function() {
     <!-- /.container -->
 
     <!-- Chat Box -->
-    <div class="chat_wrapper">
-    <div class="message_box" id="message_box"></div>
-    <div class="panel">
-    <!-- <input type="text" name="name" id="name" placeholder="Your Name" maxlength="10" style="width:20%"  /> -->
-    <input type="text" name="message" id="message" placeholder="Message" maxlength="80" style="width:60%" />
-    <button id="send-btn">Send</button>
-    <!-- <button id="send-btn" onClick="send()">Send</button> -->
-    </div>
-    </div>
+    <!-- <div class="chat_wrapper">
+        <div class="message_box" id="message_box"></div>
+            <div class="panel" id="chatpanel">
+                <input type="text" name="message" id="message" placeholder="Message" maxlength="80" style="width:60%" />
+                <button id="send-btn">Send</button>
+                <button id="send-btn" onClick="send()">Send</button>
+            </div>
+    </div> -->
     <!-- End chat box -->
 
 </body>
