@@ -71,7 +71,12 @@
     $dbhandle = mysql_connect($servername, $username, $password)
         or die("Unable to connect to MySQL");
 
-    $query = mysql_query("select * from counselors");
+    $result = mysql_query("select * from counselors");
+
+    while ($row = mysql_fetch_assoc($result)) {
+        echo $row['campusid'];
+        echo $row['name'];
+    }
 
     echo $query;
 
