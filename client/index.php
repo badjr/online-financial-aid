@@ -68,17 +68,29 @@
     $password = "123";
 
     //connection to the database
-    $dbhandle = mysql_connect($servername, $username, $password)
-        or die("Unable to connect to MySQL");
+    // $dbhandle = mysql_connect($servername, $username, $password)
+    //     or die("Unable to connect to MySQL");
 
-    $result = mysql_query("select * from counselors");
 
-    while ($row = mysql_fetch_assoc($result)) {
-        echo $row['campusid'];
-        echo $row['name'];
-    }
+    // $query = "select * from counselors";
+    // $result = mysql_query($query);
 
-    echo $query;
+    // if (!$result) {
+    //     $message  = 'Invalid query: ' . mysql_error() . "\n";
+    //     $message .= 'Whole query: ' . $query;
+    //     die($message);
+    // }
+
+    // while ($row = mysql_fetch_assoc($result)) {
+    //     echo $row['campusid'];
+    //     echo $row['name'];
+    // }
+
+    // echo $query;
+
+    // if ($_POST["campusid"] == "jcounselor" && $_POST["password"] == "123") {
+
+    // }
 
 ?>
 
@@ -97,12 +109,14 @@ $(document).ready(function() {
         $('#message_box').append("<div class=\"system_msg\">Connected!</div>"); //notify user
     }
 
-    $('#send-btn').click(function(){ //use clicks message send button   
+    $('#send-btn').click(function() { //use clicks message send button   
         var mymessage = $('#message').val(); //get message text
-        var myname = $('#name').val(); //get user name
+        // var myname = $('#name').val(); //get user name
+        // var myname = '<?php echo $name; ?>';
+        var myname = document.getElementById('namediv').innerHTML;
         
-        if(myname == ""){ //empty name?
-            alert("Enter your Name please!");
+        if(myname == "") { //empty name?
+            console.log("Enter your Name please! name = " + myname);
             return;
         }
         if(mymessage == ""){ //emtpy message?
@@ -141,11 +155,13 @@ $(document).ready(function() {
     };
     
     websocket.onerror   = function(ev){$('#message_box').append("<div class=\"system_error\">Error Occurred - "+ev.data+"</div>");}; 
-    websocket.onclose   = function(ev){$('#message_box').append("<div class=\"system_msg\">Connection Closed</div>");}; 
+    websocket.onclose   = function(ev){$('#message_box').append("<div class=\"system_msg\">Connection Closed</div>");};
 });
+
 </script>
 
 <body>
+    <div id="namediv" style="display: none"></div>
     <!-- Navigation -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
         <div class="container">
@@ -178,8 +194,25 @@ $(document).ready(function() {
 
         <div class="row">
             <div class="col-lg-12 text-center">
-
-                <h1>Your place in line is 1</h1>
+                    <?php
+                        $name = "";
+                        if ($_POST["campusid"] == "jcounselor" && $_POST["password"] == "123") {
+                            $name = "Joe Counselor";
+                            echo "<h1>Welcome, $name</h1>";
+                            // echo "<script> document.getElementById('namediv').innerHTML = $name </script>;"
+                            echo "<script>document.getElementById('namediv').innerHTML = \"$name\";</script>";
+                        }
+                        else if ($_POST["campusid"] == "jstudent" && $_POST["password"] == "123") {
+                            $name = "John Student";
+                            echo "<h1>Welcome, $name</h1>";
+                            echo "<h2>Your place in line is 1</h2>";
+                            echo "<script>document.getElementById('namediv').innerHTML = \"$name\";</script>";
+                        }
+                        else {
+                            echo "Username or password not found.";
+                        }
+                    ?>
+                
                 <p class="lead">Thanks for choosing PantherChat!</p>
                 
             </div>
@@ -191,13 +224,14 @@ $(document).ready(function() {
 
     <!-- Chat Box -->
     <div class="chat_wrapper">
-<div class="message_box" id="message_box"></div>
-<div class="panel">
-<!-- <input type="text" name="name" id="name" placeholder="Your Name" maxlength="10" style="width:20%"  /> -->
-<input type="text" name="message" id="message" placeholder="Message" maxlength="80" style="width:60%" />
-<button id="send-btn">Send</button>
-</div>
-</div>
+    <div class="message_box" id="message_box"></div>
+    <div class="panel">
+    <!-- <input type="text" name="name" id="name" placeholder="Your Name" maxlength="10" style="width:20%"  /> -->
+    <input type="text" name="message" id="message" placeholder="Message" maxlength="80" style="width:60%" />
+    <button id="send-btn">Send</button>
+    <!-- <button id="send-btn" onClick="send()">Send</button> -->
+    </div>
+    </div>
     <!-- End chat box -->
 
 </body>
