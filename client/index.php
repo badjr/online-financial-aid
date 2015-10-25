@@ -170,7 +170,7 @@ $(document).ready(function() {
     });
 
     $('#finish-btn').click(function() {
-        if (placeInLine >= 0 && document.getElementById('usertype').innerHTML == 'student') {
+        if (placeInLine == 0 && document.getElementById('usertype').innerHTML == 'student') {
             placeInLine--;
             $('#message_box').append("<div class=\"system_msg\">Connection Closed</div>"); //notify user
             //prepare json data
@@ -214,14 +214,14 @@ $(document).ready(function() {
             }
         }
         if (type == 'queuedecrease' && document.getElementById('usertype').innerHTML == 'student') {
-                placeInLine--;
-                document.getElementById('placeinline').innerHTML = "Your place in line is " + (placeInLine);
-                if (placeInLine == 0) {
-                    // document.getElementById('chat_wrapper').innerHTML = "";
-                    // $(".message_box").empty();
-                    // $(".chat_wrapper").show();
-                    $('#message_box').append("<div class=\"system_msg\">Connected!</div>"); //notify user
-                }
+            placeInLine--;
+            document.getElementById('placeinline').innerHTML = "Your place in line is " + (placeInLine);
+            if (placeInLine == 0) {
+                // document.getElementById('chat_wrapper').innerHTML = "";
+                // $(".message_box").empty();
+                // $(".chat_wrapper").show();
+                $('#message_box').append("<div class=\"system_msg\">Connected!</div>"); //notify user
+            }
 
         }
         if (type == 'queuecountforcounselor' && document.getElementById('usertype').innerHTML == 'counselor') {
@@ -230,7 +230,7 @@ $(document).ready(function() {
                 document.getElementById('studentsinline').innerHTML = "There are " + 0 + " students in line.";
             }
             else {
-                document.getElementById('studentsinline').innerHTML = "There are " + (studentsInLine - 1) + " students in line.";
+                document.getElementById('studentsinline').innerHTML = "There are " + (studentsInLine) + " students in line.";
             }
         }
         
